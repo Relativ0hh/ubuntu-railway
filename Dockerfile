@@ -3,7 +3,7 @@ FROM ubuntu:22.04
 # Evitar preguntas interactivas durante la instalación
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Instalar utilidades básicas, XFCE, servidor VNC y noVNC
+# Instalar utilidades básicas, XFCE, servidor VNC, noVNC y sudo
 RUN apt-get update && apt-get install -y \
     ubuntu-desktop-minimal \
     xfce4 \
@@ -14,7 +14,13 @@ RUN apt-get update && apt-get install -y \
     websockify \
     curl \
     bash \
+    sudo \
     && rm -rf /var/lib/apt/lists/*
+
+# ---- AQUÍ CREAMOS TU USUARIO PERMANENTE CON TU CLAVE ----
+RUN useradd -m -s /bin/bash franco && \
+    echo "franco:As17sa71" | chpasswd && \
+    usermod -aG sudo franco
 
 # Configurar variables de entorno para la pantalla virtual y el puerto de Railway
 ENV DISPLAY=:1
@@ -34,8 +40,8 @@ websockify --web /usr/share/novnc/ $PORT localhost:5900\n\
 # Railway usa el puerto 8080 por defecto para el tráfico web HTTP
 EXPOSE 8080
 
-# Ejecutar el script al arrancar el contenedor
-CMD ["/start.sh"]
-
-# Cambiar al usuario franco para la ejecución
+# Cambiamos al usuario franco ANTES del comando de inicio
 USER franco
+
+# Ejecutar el script al arrancar el contenedor (SIEMPRE AL FINAL)
+CMD ["/start.sh"]
