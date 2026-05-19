@@ -36,3 +36,6 @@ EXPOSE 8080
 
 # Ejecutar el script al arrancar el contenedor
 CMD ["/start.sh"]
+
+# Cambiar al usuario franco para la ejecución
+USER franco
