@@ -1,18 +1,38 @@
 FROM ubuntu:22.04
 
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get install -y wget curl git python3 python3-pip neofetch && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Evitar preguntas interactivas durante la instalación
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN wget -qO /bin/ttyd https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.x86_64 && \
-    chmod +x /bin/ttyd
+# Instalar utilidades básicas, XFCE, servidor VNC y noVNC
+RUN apt-get update && apt-get install -y \
+    ubuntu-desktop-minimal \
+    xfce4 \
+    xfce4-goodies \
+    xvfb \
+    x11vnc \
+    novnc \
+    websockify \
+    curl \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN echo "neofetch" >> /root/.bashrc && \
-    echo "cd /root" >> /root/.bashrc
+# Configurar variables de entorno para la pantalla virtual y el puerto de Railway
+ENV DISPLAY=:1
+ENV PORT=8080
 
-EXPOSE $PORT
+# Crear script de inicio para arrancar los servicios en orden automático
+RUN echo '#!/bin/bash\n\
+Xvfb :1 -screen 0 1280x720x24 &\n\
+sleep 2\n\
+startxfce4 &\n\
+sleep 2\n\
+x11vnc -display :1 -nopw -listen localhost -xkb -forever &\n\
+sleep 2\n\
+websockify --web /usr/share/novnc/ $PORT localhost:5900\n\
+' > /start.sh && chmod +x /start.sh
 
-CMD ["/bin/bash", "-c", "\
-    echo \"export PS1='\\[\\033[01;32m\\]$USERNAME@\\h\\[\\033[00m\\]:\\[\\033[01;34m\\]\\w\\[\\033[00m\\]\\$ '\" >> /root/.bashrc && \
-    /bin/ttyd -p $PORT -c $USERNAME:$PASSWORD /bin/bash"]
+# Railway usa el puerto 8080 por defecto para el tráfico web HTTP
+EXPOSE 8080
+
+# Ejecutar el script al arrancar el contenedor
+CMD ["/start.sh"]
