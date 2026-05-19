@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     && rm -rf /var/lib/apt/lists/*
 
-# ---- AQUÍ CREAMOS TU USUARIO PERMANENTE CON TU CLAVE ----
+# ---- CREACIÓN DEL USUARIO PERMANENTE ----
 RUN useradd -m -s /bin/bash franco && \
     echo "franco:As17sa71" | chpasswd && \
     usermod -aG sudo franco
@@ -26,11 +26,11 @@ RUN useradd -m -s /bin/bash franco && \
 ENV DISPLAY=:1
 ENV PORT=8080
 
-# Crear script de inicio para arrancar los servicios en orden automático
+# Crear script de inicio forzando a que XFCE corra como el usuario franco
 RUN echo '#!/bin/bash\n\
 Xvfb :1 -screen 0 1280x720x24 &\n\
 sleep 2\n\
-startxfce4 &\n\
+su franco -c "startxfce4" &\n\
 sleep 2\n\
 x11vnc -display :1 -nopw -listen localhost -xkb -forever &\n\
 sleep 2\n\
@@ -40,8 +40,5 @@ websockify --web /usr/share/novnc/ $PORT localhost:5900\n\
 # Railway usa el puerto 8080 por defecto para el tráfico web HTTP
 EXPOSE 8080
 
-# Cambiamos al usuario franco ANTES del comando de inicio
-USER franco
-
-# Ejecutar el script al arrancar el contenedor (SIEMPRE AL FINAL)
+# Ejecutar el script al arrancar el contenedor
 CMD ["/start.sh"]
